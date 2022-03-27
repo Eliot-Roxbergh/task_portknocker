@@ -47,6 +47,8 @@ __src/__   - source code files
 
 __build/__ - build artifacts, including binaries
 
+__include/__ - common header files
+
 __./CMakeLists.txt__ - build configuration
 
 __./README__ - this file

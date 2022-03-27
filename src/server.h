@@ -1,0 +1,4 @@
+#ifndef H_PORTKNOCK_SERVER
+#define H_PORTKNOCK_SERVER
+
+#endif

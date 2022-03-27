@@ -23,6 +23,7 @@ set(CMAKE_C_COMPILER /usr/bin/gcc)
 
 add_executable(client src/client.c)
 add_executable(server src/server.c)
+include_directories(include/)
 
 ###############################################
 ##                 Unit Tests                ##
