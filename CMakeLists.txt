@@ -21,8 +21,8 @@ ENDIF()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_SECURITY} -fno-common")
 set(CMAKE_C_COMPILER /usr/bin/gcc)
 
-add_executable(client src/client.c)
-add_executable(server src/server.c)
+add_executable(client src/client.c src/helper.c)
+add_executable(server src/server.c src/helper.c)
 include_directories(include/)
 
 ###############################################

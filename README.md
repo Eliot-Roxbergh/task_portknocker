@@ -23,7 +23,7 @@ Two executables, client and server (using POSIX sockets and OpenSSL TLS)
 
 ### Optional Features
 
-In addition to the requirements, these extra features are added:
+Ideas that could be implemented;
 
 __(TODO!)__
 
@@ -40,6 +40,10 @@ iii)  Ideally, server can have both 53 and 443 opened. This requires ii) to be u
 ```
 
 
+See also tag _[IMPROVEMENT suggestion]_ in code for more ideas.
+
+
+
 
 ## File Structure
 
@@ -47,11 +51,13 @@ __src/__   - source code files
 
 __build/__ - build artifacts, including binaries
 
-__include/__ - common header files
+__include/__ - exposed config file
 
 __./CMakeLists.txt__ - build configuration
 
 __./README__ - this file
+
+__./CHANGELOG__ - version changelog
 
 
 ## Build and Test
