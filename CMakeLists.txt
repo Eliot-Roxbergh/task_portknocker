@@ -25,14 +25,15 @@ add_executable(client src/client.c)
 add_executable(server src/server.c)
 
 ###############################################
-##         Dynamic Analysis (memcheck)       ##
+##                 Unit Tests                ##
+##                    AND                    ##
+##                 Mem check                 ##
 ###############################################
-set(MEMORYCHECK_COMMAND_OPTIONS "--error-exitcode=1") #fail on mem. fault
-include(CTest)
-
-#Need to test separately as they need to run at the same time
-#add_test(client client)
-#add_test(server server)
+# GoogleTest + Valgrind
+if (UNIT_TEST)
+    include(CTest)
+    add_subdirectory(test/)
+endif()
 
 ###############################################
 ##              Static Analysis              ##

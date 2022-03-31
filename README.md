@@ -60,7 +60,7 @@ Coded for OpenSSL 1.1.1
 
 ```
 mkdir build; cd build;
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release -DUNIT_TEST=false
 make
 ```
 
@@ -72,25 +72,26 @@ cd build
 ./client &
 ```
 
-### Building for test
+### Building for Test
 
 ```
 mkdir build; cd build;
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DUNIT_TEST=true
 make
 ```
 
-### Running Test Suite
+### Run Tests
 
 ```
-ctest -T         # Dynamic analysis (memcheck)
 make codechecker # Static analysis
+make test        # Unit tests + memcheck
 ```
 
-Oneliner
+#### Quick Oneliner
 
 ```
-cd build; rm CMakeCache.txt CMakeFiles Makefile -rf; cmake .. -DCMAKE_BUILD_TYPE=Debug && make && ctest -T && make codechecker
+# Rebuild and run all tests
+cd build; rm CMakeCache.txt CMakeFiles Makefile -rf; cmake .. -DCMAKE_BUILD_TYPE=Debug -DUNIT_TEST=true && make && make test && make codechecker
 ```
 
 #### Prerequisites
@@ -105,7 +106,7 @@ clang-7, clang-tidy-7 or later is required.
 
 Tested with GCC 8.4.0, clang / clang-tidy 10, CodeChecker 6.19.1
 
-Note that newer versions of gcc and clang-tidy will potentially find more warnings during compilation and static analysis.
+Note that newer versions of gcc and clang-tidy will potentially find more warnings during compilation and static analysis (this is good).
 
 
 #### Code Style
