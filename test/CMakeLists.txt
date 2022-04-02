@@ -39,7 +39,7 @@ target_include_directories(unit_tests PRIVATE ../src)
 target_include_directories(unit_tests PUBLIC  ../include)
 
 # Check all unit tests for memory issues
-add_test(memcheck_unit_tests valgrind
+add_test(Memcheck.AllUnitTests valgrind
          --error-exitcode=1
          --leak-check=full
          --show-leak-kinds=all

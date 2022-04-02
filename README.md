@@ -90,6 +90,11 @@ cd build
 # Start client or server (default secret hard-coded in library)
 ./portknock
 ./portknock server
+
+# Or with custom secret
+./portknock server My_secret_key01
+./portknock My_secret_key01
+
 ```
 
 ### Building for Test

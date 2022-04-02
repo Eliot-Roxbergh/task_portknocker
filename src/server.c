@@ -25,12 +25,12 @@
  *
  */
 
-int start_server(void)
+int start_server(const char *secret)
 {
-    int rv = EXIT_FAILURE;
+    int rv = -1;
 
     fprintf(stdout, "INFO: Server is listening for package on %u/udp\n", KEY_PORT);
-    if (listen_udp_secret() != 0) {
+    if (listen_udp_secret(secret) != 0) {
         fprintf(stdout, "ERROR: UDP server, secret recieved, failed\n");
         goto error;
     }
@@ -43,21 +43,28 @@ int start_server(void)
     }
 
     fprintf(stdout, "INFO: Server is done, OK!\n");
-
+    rv = 0;
 error:
-    rv = EXIT_SUCCESS;
     return rv;
 }
 
-int listen_udp_secret(void)
+/*
+ * Receive a message and send ack on UDP socket,
+ * if received message is correct secret -> return 0  (success)
+ */
+int listen_udp_secret(const char *secret)
 {
     int rv = -1;
     int fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t server_addrlen, client_addrlen;
-    size_t buf_len = strlen(secret_key_str()) + 1;
     ssize_t msg_len;
+
+    secret = get_secret_str(secret);
+    size_t buf_len = strlen(secret) + 1;
     char buf[buf_len];
+
+    /* Setup socket */
 
     errno = 0;
     if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -70,8 +77,6 @@ int listen_udp_secret(void)
     memset(&client_addr, 0, sizeof client_addr);
     client_addrlen = sizeof client_addr;
 
-    // codechecker_false_positive [security.insecureAPI.DeprecatedOrUnsafeBufferHandling] suppress : safe memset usage
-    memset(&server_addr, 0, sizeof server_addr);
     server_addrlen = sizeof server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY; /* bind to all interfaces */
@@ -84,28 +89,33 @@ int listen_udp_secret(void)
         goto error;
     }
 
+    /* Receive and ack */
+
     errno = 0;
     if ((msg_len = recvfrom(fd, buf, buf_len, MSG_WAITALL, (struct sockaddr * restrict) & client_addr,
                             &client_addrlen)) < 0) {
         perror("ERROR: Could not recieve: ");
+        close(fd);
         rv = -1;
         goto error;
     }
     buf[msg_len] = '\0';
 
     const char *reply;
-    if (strcmp(buf, secret_key_str()) == 0) {
+    if (strcmp(buf, secret) == 0) {
         fprintf(stdout, "INFO: Client accepted\n");
         reply = ACK_MSG;
         sendto(fd, reply, strlen(reply), MSG_CONFIRM, (const struct sockaddr *)&client_addr, client_addrlen);
     } else {
         fprintf(stdout, "INFO: Client bad secret\n");
-        reply = "Wrong secret, try again!";
+        reply = BAD_MSG;
         sendto(fd, reply, strlen(reply), MSG_CONFIRM, (const struct sockaddr *)&client_addr, client_addrlen);
+        close(fd);
         rv = -1;
         goto error;
     }
 
+    close(fd);
     rv = 0;
 error:
     return rv;

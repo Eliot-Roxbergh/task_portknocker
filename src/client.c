@@ -13,11 +13,11 @@
 #include "helper.h"
 #include "portknock.h"
 
-int start_client(void)
+int start_client(const char *secret)
 {
-    int rv = EXIT_FAILURE;
+    int rv = -1;
     printf("Connecting to server %s:%d/UDP..\n", SERVER_IP, KEY_PORT);
-    if (send_udp_secret() != 0) {
+    if (send_udp_secret(secret) != 0) {
         fprintf(stdout, "INFO: UDP client, secret send, failed.\n");
         goto error;
     }
@@ -29,13 +29,13 @@ int start_client(void)
         goto error;
     }
 
-    rv = EXIT_SUCCESS;
+    rv = 0;
     fprintf(stdout, "INFO: OK! Client happy\n");
 error:
     return rv;
 }
 
-int send_udp_secret(void)
+int send_udp_secret(const char *secret)
 {
     int rv = -1;
     int fd;
@@ -44,6 +44,8 @@ int send_udp_secret(void)
     size_t buf_len = 256;
     ssize_t msg_len;
     char buf[buf_len];
+
+    secret = get_secret_str(secret);
 
     errno = 0;
     if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -59,7 +61,6 @@ int send_udp_secret(void)
     server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
     server_addr.sin_port = htons(KEY_PORT);
 
-    const char *secret = secret_key_str();
     sendto(fd, secret, strlen(secret), MSG_CONFIRM, (const struct sockaddr *)&server_addr, server_addrlen);
 
     fprintf(stdout, "INFO: Secret sent, awaiting acknowledgement\n");

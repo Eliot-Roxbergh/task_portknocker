@@ -11,13 +11,14 @@
 
 void usage(FILE *stream, const char *prog)
 {
-    fprintf(stream, "Usage: %s [help] [server]\n", prog);
+    fprintf(stream, "Usage: %s [help] [server] [<secret_key>]\n", prog);
     fprintf(stream, "With no args, client is started with default config\n\n");
 }
 
 int main(int argc, char **argv)
 {
     int rv = -1;
+    const char *secret = NULL;
     bool isServer = false;
 
     // optional parameters
@@ -36,24 +37,31 @@ int main(int argc, char **argv)
         }
     }
 
-    // check remaining params
+    // get secret if given
     if (argc <= 1) {
         if (!isServer) {
             fprintf(stdout, "(type '%s help' for usage)\n\n", argv[0]);
-            fprintf(stdout, "OK running client with default secret!\n....\n\n");
+            fprintf(stdout, "No args, OK running client with default secret!\n....\n\n");
         } else {
             fprintf(stdout, "OK running server with default secret!\n....\n\n");
         }
+    } else if (argc == 2) {
+        secret = argv[1];
+        if (secret[0] == '\0') {
+            fprintf(stderr, "Secret given, but empty!\n\n");
+            goto error;
+        }
+        fprintf(stdout, "Starting %s. Using secret given from command line!\n....\n\n", isServer ? "server" : "client");
     } else {
-        fprintf(stderr, "Too many arguments given\n\n");
+        fprintf(stderr, "%d too many arguments given\n\n", argc - 2);
         usage(stderr, argv[0]);
         goto error;
     }
 
     if (isServer) {
-        rv = start_server();
+        rv = start_server(secret);
     } else {
-        rv = start_client();
+        rv = start_client(secret);
     }
 
 error:
