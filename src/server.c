@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "config.h"
 #include "helper.h"
+#include "portknock.h"
 
 /* [IMPROVEMENT suggestion]
  * In case a message is lost or other error, we can end up in a stuck state.
@@ -24,8 +25,7 @@
  *
  */
 
-// server
-int main(void)
+int start_server(void)
 {
     int rv = EXIT_FAILURE;
 
@@ -111,7 +111,7 @@ error:
     return rv;
 }
 
-static int listen_tls_session(void)
+int listen_tls_session(void)
 {
     // TODO implement
     return 0;

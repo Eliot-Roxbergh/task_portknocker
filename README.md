@@ -2,7 +2,10 @@
 
 ## Overview
 
-Two executables, client and server (using POSIX sockets and OpenSSL TLS)
+One executable capable of starting client and server, 'portknock'.
+
+This functionality is provided by the dynamic library, 'libpknock.so' (using POSIX sockets and OpenSSL TLS).
+
 
 ```
 [server listens to port 53/udp, port 443/tcp is closed]
@@ -47,11 +50,15 @@ See also tag _[IMPROVEMENT suggestion]_ in code for more ideas.
 
 ## File Structure
 
-__src/__   - source code files
+__build/__ - build here -> artifacts, including binaries
 
-__build/__ - build artifacts, including binaries
+__src/__   - source code for the library (libpknock.so)
 
-__include/__ - exposed config file
+__tool/__  - source code for the binary  (portknock)
+
+__test/__  - source code for the tests (unit tests with GoogleTest +Valgrind on those tests)
+
+__include/__ - public header files
 
 __./CMakeLists.txt__ - build configuration
 
@@ -74,10 +81,15 @@ make
 
 #### Running the Project
 
+The binary has both client and server capabilities, all you need.
+
 ```
 cd build
-./server &
-./client &
+./portknock help
+
+# Start client or server (default secret hard-coded in library)
+./portknock
+./portknock server
 ```
 
 ### Building for Test
@@ -99,6 +111,7 @@ make test        # Unit tests + memcheck
 
 ```
 # Rebuild and run all tests
+mkdir build
 cd build; rm CMakeCache.txt CMakeFiles Makefile -rf; cmake .. -DCMAKE_BUILD_TYPE=Debug -DUNIT_TEST=true && make && make test && make codechecker
 ```
 

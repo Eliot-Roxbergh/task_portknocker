@@ -1,9 +1,17 @@
 #include <gtest/gtest.h>
 
-// Demonstrate some basic assertions.
-TEST(HelloTest, BasicAssertions) {
-  // Expect two strings not to be equal.
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
+extern "C" {
+#include "client.h"
+#include "helper.h"
+#include "portknock.h"
+#include "server.h"
+}
+
+TEST(Portknocker, UnitTests)
+{
+    /* TODO implement concurrent tests */
+
+    /* Default key should work */
+    // EXPECT_EQ(0, start_client());
+    // EXPECT_EQ(0, start_server());
 }

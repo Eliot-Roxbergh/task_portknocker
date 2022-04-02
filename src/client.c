@@ -11,9 +11,9 @@
 #include <unistd.h>
 #include "config.h"
 #include "helper.h"
+#include "portknock.h"
 
-// client
-int main(void)
+int start_client(void)
 {
     int rv = EXIT_FAILURE;
     printf("Connecting to server %s:%d/UDP..\n", SERVER_IP, KEY_PORT);
@@ -84,7 +84,7 @@ error:
     return rv;
 }
 
-static int start_tls_session(void)
+int start_tls_session(void)
 {
     // TODO implement
     return 0;

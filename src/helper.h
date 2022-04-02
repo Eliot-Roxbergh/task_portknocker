@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-/* Server password */
+/* Server "password" */
 #define SECRET_KEY "0x3C0F"
 /* Server response */
 #define ACK_MSG "Welcome!"

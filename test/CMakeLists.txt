@@ -34,7 +34,9 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  EXCLUDE_FROM_ALL)
 
 add_executable(unit_tests unit_tests.cc)
-target_link_libraries(unit_tests gtest_main)
+target_link_libraries(unit_tests gtest_main pknock)
+target_include_directories(unit_tests PRIVATE ../src)
+target_include_directories(unit_tests PUBLIC  ../include)
 
 # Check all unit tests for memory issues
 add_test(memcheck_unit_tests valgrind

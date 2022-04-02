@@ -21,9 +21,28 @@ ENDIF()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_SECURITY} -fno-common")
 set(CMAKE_C_COMPILER /usr/bin/gcc)
 
-add_executable(client src/client.c src/helper.c)
-add_executable(server src/server.c src/helper.c)
-include_directories(include/)
+
+# The library - pknock
+add_library(pknock SHARED src/client.c src/helper.c src/server.c)
+target_include_directories(pknock PRIVATE src/)
+target_include_directories(pknock PUBLIC  include/)
+set_target_properties(pknock PROPERTIES
+                              VERSION ${PROJECT_VERSION}
+                            SOVERSION ${PROJECT_VERSION_MAJOR})
+
+# The binary tool - portknock
+add_executable(portknock tool/portknock.c)
+target_link_libraries (portknock pknock)
+target_include_directories(portknock PRIVATE src/)
+target_include_directories(portknock PUBLIC  include/)
+
+#To install: cmake --build . --target install
+install(TARGETS portknock
+        RUNTIME DESTINATION bin/)
+install(TARGETS pknock
+        LIBRARY DESTINATION lib/)
+install(FILES include/config.h include/portknock.h
+        DESTINATION include/)
 
 ###############################################
 ##                 Unit Tests                ##
@@ -84,5 +103,5 @@ add_custom_target(
 add_custom_target(
     clangformat
     DEPENDS clangformat_create
-    COMMAND clang-format ../src/*.[ch] ../include/*.[ch] -i
+    COMMAND clang-format ../src/*.[ch] ../include/*.[ch] ../tool/*.[ch] ../test/*.cc -i
 )
