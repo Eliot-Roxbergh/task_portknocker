@@ -17,12 +17,10 @@ This functionality is provided by the dynamic library, 'libpknock.so' (using POS
 ```
 
 
-### Basic Test Cases
+### Tests
 
-1. server port 443 closed
+Each commit has been tested with the test available at that time (unit tests / valgrind), as well as basic manual testing.
 
-2. server port 443 open when sending correct secret
-   otherwise, server port 443 closed (due to no secret, or wrong secret)
 
 ### Optional Features
 
@@ -109,6 +107,7 @@ make
 
 ```
 make codechecker # Static analysis
+
 make test        # Unit tests + memcheck
 ```
 

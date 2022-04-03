@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.6)
 project(PortKnock VERSION 0.0 LANGUAGES C)
 
+find_package(OpenSSL REQUIRED)
+
 ###############################################
 ##               Build Options               ##
 ###############################################
@@ -24,6 +26,7 @@ set(CMAKE_C_COMPILER /usr/bin/gcc)
 
 # The library - pknock
 add_library(pknock SHARED src/client.c src/helper.c src/server.c)
+target_link_libraries (pknock -lcrypto -lssl)
 target_include_directories(pknock PRIVATE src/)
 target_include_directories(pknock PUBLIC  include/)
 set_target_properties(pknock PROPERTIES

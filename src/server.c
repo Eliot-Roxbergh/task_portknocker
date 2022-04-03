@@ -1,5 +1,6 @@
 #include "server.h"
 #include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <openssl/err.h>
@@ -28,8 +29,16 @@
  * [IMPROVEMENT suggestion]
  * Send some kind of none / signature / derived secret, instead of secret key directly
  *
+ * [IMPROVEMENT suggestion]
+ * Take server IP and port as argument in tool
+ *
+ * [IMPROVEMENT suggestion]
+ * Make sure client and server certs are verified properly. e.g. it's possible to add hostname verification, ...
  */
 
+/*
+ * Main function called from tool
+ */
 int start_server(const char *secret)
 {
     int rv = -1;
@@ -40,11 +49,10 @@ int start_server(const char *secret)
         goto error;
     }
 
-    // TODO implement
-    fprintf(stdout, "INFO: Server is open for TLS on 443/tcp\n");
-    while (listen_tls_session() != 0) {
-        fprintf(stderr, "ERROR: TLS failed. Retrying..\n");
-        sleep(1);
+    fprintf(stdout, "INFO: Server open for TLS on %u/tcp\n ...", TLS_PORT);
+    if ((rv = listen_tls_session()) != 0) {
+        fprintf(stderr, "ERROR: TLS failed!\n");
+        goto error;
     }
 
     fprintf(stdout, "INFO: Server is done, OK!\n");
@@ -83,6 +91,44 @@ error:
     return rv;
 }
 
+/*
+ * Start a TLS server and send a simple handshake once a secure session has been established.
+ *  As soon as secure communication with client is successful, exit with success (proof of concept complete).
+ */
+static int tls_server_setup_openssl(SSL_CTX **);
+static int tls_server_tcp_listen(int *);
+static int tls_server_start_session(SSL_CTX *, int);
+
+int listen_tls_session(void)
+{
+    int rv = -1;
+    int fd = -1;
+    SSL_CTX *ctx = NULL;
+
+    if (tls_server_setup_openssl(&ctx) != 0) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    if (tls_server_tcp_listen(&fd) != 0) {
+        goto error;
+    }
+
+    // Try until TLS communication successful
+    while (tls_server_start_session(ctx, fd) != 0) {
+        ERR_print_errors_fp(stderr);
+        fprintf(stderr, "Session failed, trying again...\n");
+    }
+
+    rv = 0;
+error:
+    if (fd >= 0) {
+        close(fd);
+    }
+    SSL_CTX_free(ctx);
+    return rv;
+}
+
 /* Helper functions */
 
 static int udp_server_open_socket(int *fd_p)
@@ -92,7 +138,6 @@ static int udp_server_open_socket(int *fd_p)
     struct sockaddr_in server_addr;
     socklen_t server_addrlen;
 
-    errno = 0;
     if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("ERROR: Could not get socket file descriptor: ");
         goto error;
@@ -130,7 +175,6 @@ static int udp_server_receive_secret(int fd, const char *secret)
     memset(&client_addr, 0, sizeof client_addr);
     client_addrlen = sizeof client_addr;
 
-    errno = 0;
     if ((msg_len = recvfrom(fd, buf, buf_len, MSG_WAITALL, (struct sockaddr * restrict) & client_addr,
                             &client_addrlen)) < 0) {
         perror("ERROR: Could not recieve: ");
@@ -154,8 +198,145 @@ error:
     return rv;
 }
 
-int listen_tls_session(void)
+static int tls_server_setup_openssl(SSL_CTX **ctx_p)
 {
-    // TODO implement
+    /* OpenSSL config */
+    SSL_CTX *ctx;
+    const SSL_METHOD *method;
+
+    method = TLS_server_method();
+
+    ctx = SSL_CTX_new(method);
+    if (!ctx) {
+        fprintf(stderr, "ERROR: Unable to create SSL context\n");
+        goto error;
+    }
+
+    if (SSL_CTX_use_certificate_chain_file(ctx, SERVER_TLS_CHAIN) != 1) {
+        goto error;
+    }
+    if (SSL_CTX_use_PrivateKey_file(ctx, SERVER_TLS_KEY, SSL_FILETYPE_PEM) != 1) {
+        goto error;
+    }
+    if (SSL_CTX_check_private_key(ctx) != 1) {
+        fprintf(stderr, "ERROR: Private key mismatch/error\n");
+        goto error;
+    }
+
+    /* Optional hardening */
+
+    // Require TLS 1.3
+    if (SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION) != 1) {
+        fprintf(stderr, "ERROR: Could not set version, TLS 1.3\n");
+        goto error;
+    }
+
+    // Enable mutual authentication (i.e. check client cert)
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
+    // Set trusted CAs for mutual authentication
+    if (SSL_CTX_load_verify_locations(ctx, CLIENT_CA_CERT, NULL) != 1) {
+        goto error;
+    }
+
+    *ctx_p = ctx;
     return 0;
+error:
+    return 1;
+}
+
+static int tls_server_tcp_listen(int *fd_p)
+{
+    /* Setup TCP socket */
+    int rv = -1;
+    int fd;
+    struct sockaddr_in server_addr;
+    socklen_t server_addrlen;
+
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("ERROR: Could not get socket file descriptor: ");
+        goto error;
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY; /* bind to all interfaces */
+    server_addr.sin_port = htons(TLS_PORT);
+    server_addrlen = sizeof server_addr;
+
+    if (bind(fd, (const struct sockaddr *)&server_addr, server_addrlen) != 0) {
+        perror("ERROR: Could not bind: ");
+        goto error;
+    }
+
+    if (listen(fd, 1) < 0) {
+        perror("ERROR: Unable to listen");
+        goto error;
+    }
+
+    rv = 0;
+error:
+    *fd_p = fd;
+    return rv;
+}
+
+static int tls_server_start_session(SSL_CTX *ctx, int socket_fd)
+{
+    /* accept TCP connection and establish TLS session */
+    int rv = -1;
+    struct sockaddr_in client_addr;
+    unsigned int len = sizeof client_addr;
+    SSL *ssl = NULL;
+    int client_fd = -1;
+
+    client_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &len);
+    if (client_fd < 0) {
+        fprintf(stderr, "ERROR: Socket could not accept\n");
+        goto error;
+    }
+
+    if ((ssl = SSL_new(ctx)) == NULL) {
+        fprintf(stderr, "ERROR: SSL_new ctx fail");
+        goto error;
+    }
+    if (SSL_set_fd(ssl, client_fd) != 1) {
+        fprintf(stderr, "ERROR: SSL_set_fd fail");
+        goto error;
+    }
+
+    if (SSL_accept(ssl) != 1) {
+        fprintf(stderr, "ERROR: SSL accept fail");
+        goto error;
+    } else {
+        fprintf(stdout, "INFO: Connection successful!\n");
+    }
+
+    /* Connection established, we are done... could do anything here
+     * For now, do simple message exchange to show secure communication works */
+    {
+        int bytes;
+        const char *reply = ACK_MSG;
+        int buf_len = BUF_LEN;
+        char buf[buf_len];
+        assert(strlen(reply) <= INT_MAX);
+
+        SSL_write(ssl, reply, (int)strlen(reply));
+        bytes = SSL_read(ssl, buf, buf_len);
+        if (bytes > 0 && bytes < buf_len) {
+            buf[bytes] = '\0';
+            fprintf(stdout, "MSG: Client says \"%s\"\n", buf);
+        } else {
+            fprintf(stderr, "ERROR: SSL_read failed\n");
+            goto error;
+        }
+    }
+
+    rv = 0;
+error:
+    if (ssl) {
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+    }
+    if (client_fd >= 0) {
+        close(client_fd);
+    }
+    return rv;
 }
