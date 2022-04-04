@@ -109,6 +109,9 @@ make
 make codechecker # Static analysis
 
 make test        # Unit tests + memcheck
+ctest -V         # Same as above, but verbose
+
+make coverage    # Show code coverage for the unit tests
 ```
 
 #### Quick Oneliner
@@ -123,7 +126,7 @@ cd build; rm CMakeCache.txt CMakeFiles Makefile -rf; cmake .. -DCMAKE_BUILD_TYPE
 
 ```
 sudo apt update
-sudo apt install -y gcc valgrind clang clang-tidy openssl libssl-1.1 libssl-dev python3-pip
+sudo apt install -y gcc valgrind clang clang-tidy openssl libssl-1.1 libssl-dev python3-pip lcov
 pip3 install --user codechecker
 ```
 

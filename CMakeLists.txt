@@ -108,3 +108,15 @@ add_custom_target(
     DEPENDS clangformat_create
     COMMAND clang-format ../src/*.[ch] ../include/*.[ch] ../tool/*.[ch] ../test/*.cc -i
 )
+
+# Run CodeCoverage on unit tests
+# make coverage
+# Prerequisites: sudo apt install -y lcov
+include(test/CodeCoverage.cmake)
+APPEND_COVERAGE_COMPILER_FLAGS()
+setup_target_for_coverage_lcov(
+    NAME coverage
+    EXECUTABLE ${CMAKE_BINARY_DIR}/test/unit_tests
+    EXCLUDE "/usr/include/*" "gtest/*"
+    DEPENDENCIES portknock pknock
+)
