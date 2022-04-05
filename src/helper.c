@@ -6,13 +6,15 @@
 #include <stdlib.h>
 
 /*
+ * [improvement] suggestion:
+ *  get_secret_str could easily be modified to allow for case insensitive secrets, or not starting with 0x
+ */
+
+/*
  * Functions to get and check secret.
  *
  * Secret may be NULL,
  * in which case the hardcoded secret key is used.
- *
- * [IMPROVEMENT suggestion] get_secret_str could easily be modified to allow for case insensitive secrets,
- *                          or not starting with 0x
  */
 
 /* Note: returns 0 on error, 0 is not a valid secret */

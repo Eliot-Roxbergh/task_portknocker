@@ -1,6 +1,31 @@
 # Version 0.2
--
+
+TBA
 
 # Version 0.1
-#
-WIP
+
+Support basic client and server functionality;
+    0) Server listens to UDP/53
+    1) Client sends a hardcoded secret directly to server via UDP
+    2) If secret is correct,
+        -- server adds client to list of whitelisted IPs
+        -- else both client and server quits with error code.
+    3) Server now opens a TLS/443 socket instead, and instead of matching on a secret
+        the server now only allows the specific IP whitelisted in prior step
+    4) The client connects, and if the source IP matches the whitelist,
+        -- some messages are exchanged over this secure channel.
+        -- else both client and server quits with error code.
+    5) Server and client terminates
+
+Support tooling;
+    make codechecker) to run static analysis
+    make clangformat) to run linter to automatically format the source code
+    make test) to run basic unit test suite as well as memcheck
+    make coverage) to check codecoverage of the unit tests
+
+
+Test results:
+    GCC         OK   (a warning in test/unit_test.cc)
+    Codechecker OK
+    Valgrind    OK
+    lcov        OK   (Code coverage for the unit tests are 78.7% in src/ and 0% in tool/)

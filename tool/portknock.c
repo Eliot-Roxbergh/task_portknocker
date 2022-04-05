@@ -4,9 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* [IMPROVEMENT suggestion]
- * Take more inputs, such as server IP (for client) and ports to use.
- * Another additional feature would be to have timeout, retry, etc.
+/*
+ * [improvement] suggestions:
+ *  - Take more inputs, such as server IP (for client) and ports to use.
+ *
+ *  - Another additional feature would be to have timeout, retry, etc.
  */
 
 void usage(FILE *stream, const char *prog)

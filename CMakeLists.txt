@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
-project(PortKnock VERSION 0.0 LANGUAGES C)
+set(CMAKE_C_COMPILER /usr/bin/gcc)
 
+project(PortKnock VERSION 0.1 LANGUAGES C)
 find_package(OpenSSL REQUIRED)
 
 ###############################################
@@ -21,7 +22,6 @@ ELSE()
 ENDIF()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_SECURITY} -fno-common")
-set(CMAKE_C_COMPILER /usr/bin/gcc)
 
 
 # The library - pknock
@@ -112,6 +112,7 @@ add_custom_target(
 # Run CodeCoverage on unit tests
 # make coverage
 # Prerequisites: sudo apt install -y lcov
+set(CMAKE_COMPILER_IS_GNUCXX true) #ugly hack, it bugged for me (TODO, perhaps because C project, not CXX?)
 include(test/CodeCoverage.cmake)
 APPEND_COVERAGE_COMPILER_FLAGS()
 setup_target_for_coverage_lcov(

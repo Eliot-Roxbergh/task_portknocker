@@ -20,25 +20,21 @@
 static whitelist client_whitelist;
 
 /*
- * [IMPROVEMENT suggestion]
- * Add client IPs to whitelist if valid knock, don't allow any source for TLS.
+ * Some [improvement] suggestions:
  *
- * [IMPROVEMENT suggestion]
- * NOTE! In case a message is lost or other error, we can end up in a stuck state.
+ * - In case a message is lost or other error, we can end up in a stuck state!
  *       This applies for both client and server parts.
  *       Suggestion, use multiple threads or set timeout with poll() or similar
  *
- * [IMPROVEMENT suggestion]
- * It's slightly inefficient to send the secret as regular (utf-8) chars, instead of raw data.
+ * - Send some kind of nonce / signature / derived secret, instead of secret key directly
+ *  Such as to encrypt the current time/day, or client public IP address, derive secret from server nonce etc. etc.
  *
- * [IMPROVEMENT suggestion]
- * Send some kind of none / signature / derived secret, instead of secret key directly
+ * - Take server IP and ports as arguments
  *
- * [IMPROVEMENT suggestion]
- * Take server IP and port as argument in tool
+ * - It is slightly inefficient to send the secret as regular (utf-8) chars, instead of raw data.
  *
- * [IMPROVEMENT suggestion]
- * Make sure client and server certs are verified properly. e.g. it's possible to add hostname verification, ...
+ * - Make sure client and server certs are verified properly. e.g. it's possible to add hostname verification
+ *
  */
 
 /*
