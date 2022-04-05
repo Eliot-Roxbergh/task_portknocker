@@ -3,8 +3,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <netinet/in.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -13,6 +16,8 @@
 #include "config.h"
 #include "helper.h"
 #include "portknock.h"
+
+static whitelist client_whitelist;
 
 /*
  * [IMPROVEMENT suggestion]
@@ -49,7 +54,7 @@ int start_server(const char *secret)
         goto error;
     }
 
-    fprintf(stdout, "INFO: Server open for TLS on %u/tcp\n ...", TLS_PORT);
+    fprintf(stdout, "INFO: Server open for TLS on %u/tcp ...\n", TLS_PORT);
     if ((rv = listen_tls_session()) != 0) {
         fprintf(stderr, "ERROR: TLS failed!\n");
         goto error;
@@ -58,6 +63,11 @@ int start_server(const char *secret)
     fprintf(stdout, "INFO: Server is done, OK!\n");
     rv = 0;
 error:
+    if (client_whitelist.addr) {
+        free(client_whitelist.addr);
+        client_whitelist.addr = NULL;
+        client_whitelist.elems = 0;
+    }
     return rv;
 }
 
@@ -114,10 +124,9 @@ int listen_tls_session(void)
         goto error;
     }
 
-    // Try until TLS communication successful
-    while (tls_server_start_session(ctx, fd) != 0) {
+    if (tls_server_start_session(ctx, fd) != 0) {
         ERR_print_errors_fp(stderr);
-        fprintf(stderr, "Session failed, trying again...\n");
+        fprintf(stderr, "ERROR: Session failed\n");
     }
 
     rv = 0;
@@ -127,6 +136,48 @@ error:
     }
     SSL_CTX_free(ctx);
     return rv;
+}
+
+/*
+ * Maintain whitelist of approved IP addresses
+ * A client is whitelisted for TLS by performing portknock
+ */
+
+bool client_in_whitelist(unsigned long addr)
+{
+    if (!client_whitelist.addr) {
+        fprintf(stderr, "ERROR: Read from client whitelist, whitelist is empty!\n");
+        return false;
+    }
+    for (size_t i = 0; i < client_whitelist.elems; i++) {
+        if (client_whitelist.addr[i] == addr) {
+            fprintf(stdout, "INFO: Client is in whitelist, proceed.\n");
+            return true;
+        }
+    }
+    return false;
+}
+
+int add_client_to_whitelist(unsigned long addr)
+{
+    if (client_whitelist.elems == SIZE_MAX) {
+        fprintf(stderr, "ERROR: Sorry, client whitelist is full (reached %zu entries)\n", client_whitelist.elems);
+        return 1;
+    }
+
+    size_t elems = ++(client_whitelist.elems);
+    size_t new_size = elems * sizeof(*client_whitelist.addr);
+    client_whitelist.addr = realloc(client_whitelist.addr, new_size);
+    client_whitelist.addr[elems - 1] = addr;
+
+    /* TODO this below (print IP address) was done in haste, and only supports ipv4.
+     * Consider e.g. using inet_ntop or store as string instead with getnameinfo().
+     */
+    struct in_addr tmp;
+    tmp.s_addr = (unsigned)addr;
+    fprintf(stdout, "INFO: Adding client \"%s\" to whitelist.\n", inet_ntoa(tmp));
+
+    return 0;
 }
 
 /* Helper functions */
@@ -191,6 +242,16 @@ static int udp_server_receive_secret(int fd, const char *secret)
         fprintf(stdout, "INFO: Client bad secret\n");
         reply = BAD_MSG;
         (void)sendto(fd, reply, strlen(reply), MSG_CONFIRM, (const struct sockaddr *)&client_addr, client_addrlen);
+        goto error;
+    }
+
+    // Add client to whitelist
+    if (!getpeername(fd, (struct sockaddr *)&client_addr, &client_addrlen)) { //not necessary?
+        perror("ERROR: Get client IP failed");
+        goto error;
+    }
+    if (add_client_to_whitelist(client_addr.sin_addr.s_addr) != 0) {
+        fprintf(stderr, "ERROR: Client verified OK, but could not add to whitelist\n");
         goto error;
     }
     rv = 0;
@@ -283,13 +344,23 @@ static int tls_server_start_session(SSL_CTX *ctx, int socket_fd)
     /* accept TCP connection and establish TLS session */
     int rv = -1;
     struct sockaddr_in client_addr;
-    unsigned int len = sizeof client_addr;
+    unsigned int client_addrlen = sizeof client_addr;
     SSL *ssl = NULL;
     int client_fd = -1;
 
-    client_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &len);
+    client_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &client_addrlen);
     if (client_fd < 0) {
-        fprintf(stderr, "ERROR: Socket could not accept\n");
+        perror("ERROR: Socket could not accept");
+        goto error;
+    }
+
+    /* Ensure client is whitelisted */
+    if (!getpeername(socket_fd, (struct sockaddr *)&client_addr, &client_addrlen)) { //not necessary?
+        perror("ERROR: Get client IP failed");
+        goto error;
+    }
+    if (!client_in_whitelist(client_addr.sin_addr.s_addr)) {
+        fprintf(stderr, "ERROR: client IP not in whitelist\n");
         goto error;
     }
 

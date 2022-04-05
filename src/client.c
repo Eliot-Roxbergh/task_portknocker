@@ -196,6 +196,8 @@ static int tls_client_tcp_connect(int *fd_p)
     server_addr.sin_port = htons(TLS_PORT);
     server_addrlen = sizeof server_addr;
 
+    usleep(20000); /* ugly hack, in case client is too fast TODO */
+
     if (connect(fd, (struct sockaddr *)&server_addr, server_addrlen) != 0) {
         perror("ERROR: Unable to connect");
         goto error;
