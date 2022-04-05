@@ -12,16 +12,21 @@ void *threaded_server(void *);
 void run_client_server(const char *, const char *, int *, int *);
 
 /*
- * Proof of concept.. of course many more tests can be added!
- * Also, this is more of an integration test, the idea is to split into several smaller units and cases.
- * TODO
+ * Proof of concept.. of course many more tests can be added
  */
 
 /* Unit tests */
 
 TEST(Portknock, FullClientServer)
 {
-    /* Test UDP two-way communication */
+    /*
+     * Test base functionality,
+     * by having a client knock and then try access
+     * the TLS server.
+     *
+     * TODO this is more of a full application test,
+     * the idea is to split into several smaller units and cases!
+     */
     const char *secret_s, *secret_c;
     int ret_s, ret_c;
 
