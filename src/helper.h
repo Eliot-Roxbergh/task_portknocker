@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define BUF_LEN 256
 /* Server "password" */
 #define SECRET_KEY "0x3C0F"
 /* Server response */

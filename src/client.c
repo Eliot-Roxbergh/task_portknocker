@@ -16,9 +16,10 @@
 int start_client(const char *secret)
 {
     int rv = -1;
-    printf("Connecting to server %s:%d/UDP..\n", SERVER_IP, KEY_PORT);
+
+    fprintf(stdout, "INFO: Knocking on server (%s:%u/UDP) ...\n", SERVER_IP, KEY_PORT);
     if (send_udp_secret(secret) != 0) {
-        fprintf(stdout, "INFO: UDP client, secret send, failed.\n");
+        fprintf(stderr, "INFO: UDP client, secret send, failed.\n");
         goto error;
     }
 
@@ -29,30 +30,50 @@ int start_client(const char *secret)
         goto error;
     }
 
-    rv = 0;
     fprintf(stdout, "INFO: OK! Client happy\n");
+    rv = 0;
 error:
     return rv;
 }
+
+/*
+ * Send secret to server over UDP
+ */
+static int udp_client_send_secret(int, const char *);
 
 int send_udp_secret(const char *secret)
 {
     int rv = -1;
     int fd;
-    struct sockaddr_in server_addr;
-    socklen_t server_addrlen;
-    size_t buf_len = 256;
-    ssize_t msg_len;
-    char buf[buf_len];
 
+    // check secret, use hardcoded if NULL
     secret = get_secret_str(secret);
 
     errno = 0;
     if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("Could not get socket file descriptor: ");
-        rv = -1;
+        perror("ERROR: Could not get socket file descriptor: ");
         goto error;
     }
+
+    if (udp_client_send_secret(fd, secret) != 0) {
+        goto error;
+    }
+
+    rv = 0;
+error:
+    return rv;
+}
+
+/* Helper functions */
+
+static int udp_client_send_secret(int fd, const char *secret)
+{
+    int rv = -1;
+    struct sockaddr_in server_addr;
+    socklen_t server_addrlen;
+    size_t buf_len = BUF_LEN;
+    ssize_t msg_len;
+    char buf[buf_len];
 
     // codechecker_false_positive [security.insecureAPI.DeprecatedOrUnsafeBufferHandling] suppress : safe memset usage
     memset(&server_addr, 0, sizeof server_addr);
@@ -67,8 +88,7 @@ int send_udp_secret(const char *secret)
     errno = 0;
     if ((msg_len = recvfrom(fd, buf, buf_len, MSG_WAITALL, (struct sockaddr * restrict) & server_addr,
                             &server_addrlen)) < 0) {
-        perror("Could not recieve: ");
-        rv = -1;
+        perror("ERROR: Could not recieve: ");
         goto error;
     }
     buf[msg_len] = '\0';
@@ -76,7 +96,6 @@ int send_udp_secret(const char *secret)
     if (strcmp(buf, ACK_MSG) == 0) {
         fprintf(stdout, "INFO: Secret accepted by server\n");
     } else {
-        rv = -1;
         goto error;
     }
 
