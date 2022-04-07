@@ -122,10 +122,14 @@ static int udp_client_send_secret(int fd, const char *secret)
     sendto(fd, secret, strlen(secret), MSG_CONFIRM, (const struct sockaddr *)&server_addr, server_addrlen);
 
     fprintf(stdout, "INFO: Secret sent, awaiting acknowledgement\n");
-    if ((msg_len = recvfrom(fd, buf, buf_len, MSG_WAITALL, (struct sockaddr * restrict) & server_addr,
+    if ((msg_len = recvfrom(fd, buf, buf_len - 1, MSG_WAITALL, (struct sockaddr * restrict) & server_addr,
                             &server_addrlen)) < 0) {
         perror("ERROR: Could not recieve: ");
         goto error;
+    }
+    // To make codechecker happy, but recvfrom should not return more than given buf_len (?)
+    if ((size_t)msg_len >= buf_len) {
+        msg_len = (ssize_t)buf_len - 1;
     }
     buf[msg_len] = '\0';
 

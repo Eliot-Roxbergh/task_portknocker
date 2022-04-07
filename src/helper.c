@@ -17,6 +17,10 @@
  * in which case the hardcoded secret key is used.
  */
 
+/* TODO it is a bit dangerous to have recursive calls like this.
+ *      As is now, it should not be a problem but this is a bit funny sequence..
+ *      get_secret_int -> get_secret_str -> is_secret_ok -> get_secret_int -> (OK done)
+ */
 /* Note: returns 0 on error, 0 is not a valid secret */
 uint32_t get_secret_int(const char *secret_s)
 {

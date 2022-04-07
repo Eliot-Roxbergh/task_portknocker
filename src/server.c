@@ -122,7 +122,8 @@ int listen_tls_session(void)
 
     if (tls_server_start_session(ctx, fd) != 0) {
         ERR_print_errors_fp(stderr);
-        fprintf(stderr, "ERROR: Session failed\n");
+        fprintf(stderr, "ERROR: TLS failed\n");
+        goto error;
     }
 
     rv = 0;
@@ -222,10 +223,14 @@ static int udp_server_receive_secret(int fd, const char *secret)
     memset(&client_addr, 0, sizeof client_addr);
     client_addrlen = sizeof client_addr;
 
-    if ((msg_len = recvfrom(fd, buf, buf_len, MSG_WAITALL, (struct sockaddr * restrict) & client_addr,
+    if ((msg_len = recvfrom(fd, buf, buf_len - 1, MSG_WAITALL, (struct sockaddr * restrict) & client_addr,
                             &client_addrlen)) < 0) {
         perror("ERROR: Could not recieve: ");
         goto error;
+    }
+    // To make codechecker happy, but recvfrom should not return more than given buf_len (?)
+    if ((size_t)msg_len >= buf_len) {
+        msg_len = (ssize_t)buf_len - 1;
     }
     buf[msg_len] = '\0';
 
@@ -242,7 +247,7 @@ static int udp_server_receive_secret(int fd, const char *secret)
     }
 
     // Add client to whitelist
-    if (!getpeername(fd, (struct sockaddr *)&client_addr, &client_addrlen)) { //not necessary?
+    if (!getpeername(fd, (struct sockaddr *)&client_addr, &client_addrlen)) {  // not necessary?
         perror("ERROR: Get client IP failed");
         goto error;
     }
@@ -351,7 +356,7 @@ static int tls_server_start_session(SSL_CTX *ctx, int socket_fd)
     }
 
     /* Ensure client is whitelisted */
-    if (!getpeername(socket_fd, (struct sockaddr *)&client_addr, &client_addrlen)) { //not necessary?
+    if (!getpeername(socket_fd, (struct sockaddr *)&client_addr, &client_addrlen)) {  // not necessary?
         perror("ERROR: Get client IP failed");
         goto error;
     }
