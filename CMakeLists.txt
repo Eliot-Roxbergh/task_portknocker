@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.6)
 set(CMAKE_C_COMPILER /usr/bin/gcc)
-
 project(PortKnock VERSION 0.1 LANGUAGES C)
+
 find_package(OpenSSL REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(OPENSSL openssl>=1.1.1 REQUIRED)
 
 ###############################################
 ##               Build Options               ##
@@ -23,6 +25,11 @@ ENDIF()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_SECURITY} -fno-common")
 
+# (TODO) Example for building against other openssl than system default
+#           or use FindOpenSSL.cmake ?
+#include_directories("${OPENSSL_INCLUDE_DIR}")
+#link_directories("${OPENSSL_CRYPTO_LIBRARIES}" "${OPENSSL_SSL_LIBRARIES}")
+#add_definitions("${OPENSSL_CFLAGS_OTHER}")
 
 # The library - pknock
 add_library(pknock SHARED src/client.c src/helper.c src/server.c)
