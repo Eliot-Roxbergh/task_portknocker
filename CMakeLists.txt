@@ -10,20 +10,27 @@ pkg_check_modules(OPENSSL openssl>=1.1.1 REQUIRED)
 ##               Build Options               ##
 ###############################################
 set(C_STD gnu11)
+
+#NOTE: Some of these compiler flags are most surely GCC specific,
+#       and some security flags are hw specific such as fcf-protection (uses Intel CET, according to GCC-12)
 IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Debug build")
     set(CMAKE_VERBOSE_MAKEFILE 1)
     set(C_FLAGS_DEBUG    " -g -Og -fasynchronous-unwind-tables -fexceptions ")
     set(C_FLAGS_WARNINGS " -Wall -Wextra -pedantic -Werror -Wformat=2 -Wconversion -Wdouble-promotion -Wshadow -Wundef ")
+
+    # Additional warnings, in some cases these can be ignored (that's the idea at least)
+    set(C_FLAGS_WARNINGS_EXTRA " -Wcast-qual -Wcast-align -Wredundant-decls -Winline -Wdisabled-optimization -Wnested-externs \
+                                 -fstrict-aliasing ") #more: -Wmissing-prototypes -Wmissing-declarations
 ELSE()
     message("Release build")
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON) #(this should be default on)
     set(C_FLAGS_DEBUG    " -O3 ")
     set(C_FLAGS_SECURITY " -D_FORTIFY_SOURCE=2  -D_GLIBCXX_ASSERTIONS -fcf-protection=full -fstack-protector-strong \
-                           -Wl,-z,noexecstack -Wl,-z,now -Wl,-z,relro -Wl,-z,defs ") #-fstack-clash-protection
+                           -Wl,-z,noexecstack -Wl,-z,now -Wl,-z,relro -Wl,-z,defs ") #more: -fstack-clash-protection
 ENDIF()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_SECURITY} -fno-common")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_WARNINGS_EXTRA} ${C_FLAGS_SECURITY} -fno-common")
 
 # (TODO) Example for building against other openssl than system default
 #           or use FindOpenSSL.cmake ?
