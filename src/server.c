@@ -195,6 +195,7 @@ static int udp_server_open_socket(int *fd_p)
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY; /* bind to all interfaces */
     server_addr.sin_port = htons(KEY_PORT);
+
     if (bind(fd, (const struct sockaddr *)&server_addr, server_addrlen) != 0) {
         perror("ERROR: Could not bind: ");
         goto error;
@@ -216,12 +217,8 @@ static int udp_server_receive_secret(int fd, const char *secret)
     size_t buf_len = strlen(secret) + 1;
     char buf[buf_len];
 
-    struct sockaddr_in client_addr;
-    socklen_t client_addrlen;
-
-    // codechecker_false_positive [security.insecureAPI.DeprecatedOrUnsafeBufferHandling] suppress : safe memset usage
-    memset(&client_addr, 0, sizeof client_addr);
-    client_addrlen = sizeof client_addr;
+    struct sockaddr_in client_addr = {0};
+    socklen_t client_addrlen = sizeof client_addr;
 
     if ((msg_len = recvfrom(fd, buf, buf_len - 1, MSG_WAITALL, (struct sockaddr * restrict) & client_addr,
                             &client_addrlen)) < 0) {
@@ -319,10 +316,10 @@ static int tls_server_tcp_listen(int *fd_p)
         goto error;
     }
 
+    server_addrlen = sizeof server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY; /* bind to all interfaces */
     server_addr.sin_port = htons(TLS_PORT);
-    server_addrlen = sizeof server_addr;
 
     if (bind(fd, (const struct sockaddr *)&server_addr, server_addrlen) != 0) {
         perror("ERROR: Could not bind: ");

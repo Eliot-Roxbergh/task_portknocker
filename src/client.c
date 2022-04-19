@@ -112,8 +112,6 @@ static int udp_client_send_secret(int fd, const char *secret)
     ssize_t msg_len;
     char buf[buf_len];
 
-    // codechecker_false_positive [security.insecureAPI.DeprecatedOrUnsafeBufferHandling] suppress : safe memset usage
-    memset(&server_addr, 0, sizeof server_addr);
     server_addrlen = sizeof server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
@@ -191,16 +189,18 @@ static int tls_client_tcp_connect(int *fd_p)
     int fd;
     struct sockaddr_in server_addr;
     socklen_t server_addrlen;
+
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("ERROR: Could not get socket file descriptor: ");
         goto error;
     }
+
+    usleep(20000); /* ugly hack, in case client is too fast TODO */
+
+    server_addrlen = sizeof server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
     server_addr.sin_port = htons(TLS_PORT);
-    server_addrlen = sizeof server_addr;
-
-    usleep(20000); /* ugly hack, in case client is too fast TODO */
 
     if (connect(fd, (struct sockaddr *)&server_addr, server_addrlen) != 0) {
         perror("ERROR: Unable to connect");
