@@ -16,12 +16,13 @@ set(C_STD gnu11)
 IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Debug build")
     set(CMAKE_VERBOSE_MAKEFILE 1)
-    set(C_FLAGS_DEBUG    " -g -Og -fasynchronous-unwind-tables -fexceptions ")
+    set(C_FLAGS_DEBUG    " -g -Og -fasynchronous-unwind-tables -fexceptions -fno-omit-frame-pointer ")
     set(C_FLAGS_WARNINGS " -Wall -Wextra -pedantic -Werror -Wformat=2 -Wconversion -Wdouble-promotion -Wshadow -Wundef ")
 
     # Additional warnings, in some cases these can be ignored (that's the idea at least)
     set(C_FLAGS_WARNINGS_EXTRA " -Wcast-qual -Wcast-align -Wredundant-decls -Winline -Wdisabled-optimization -Wnested-externs \
                                  -fstrict-aliasing ") #more: -Wmissing-prototypes -Wmissing-declarations
+    set(C_FLAGS_RUNTIME_CHECKS " -fsanitize=undefined ") #TODO testing this, warns during runtime
 ELSE()
     message("Release build")
     set(CMAKE_POSITION_INDEPENDENT_CODE ON) #(this should be default on)
@@ -30,7 +31,7 @@ ELSE()
                            -Wl,-z,noexecstack -Wl,-z,now -Wl,-z,relro -Wl,-z,defs ") #more: -fstack-clash-protection
 ENDIF()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_WARNINGS_EXTRA} ${C_FLAGS_SECURITY} -fno-common")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_WARNINGS_EXTRA} ${C_FLAGS_SECURITY} ${C_FLAGS_RUNTIME_CHECKS} -fno-common")
 
 # (TODO) Example for building against other openssl than system default
 #           or use FindOpenSSL.cmake ?
