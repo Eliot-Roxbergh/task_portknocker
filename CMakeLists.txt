@@ -13,7 +13,7 @@ set(C_STD gnu11)
 
 #NOTE: Some of these compiler flags are most surely GCC specific,
 #       and some security flags are hw specific such as fcf-protection (uses Intel CET, according to GCC-12)
-IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Debug build")
     set(CMAKE_VERBOSE_MAKEFILE 1)
     set(C_FLAGS_DEBUG    " -g -Og -fasynchronous-unwind-tables -fexceptions -fno-omit-frame-pointer ")
@@ -23,13 +23,13 @@ IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(C_FLAGS_WARNINGS_EXTRA " -Wcast-qual -Wcast-align -Wredundant-decls -Winline -Wdisabled-optimization -Wnested-externs \
                                  -fstrict-aliasing ") #more: -Wmissing-prototypes -Wmissing-declarations
     set(C_FLAGS_RUNTIME_CHECKS " -fsanitize=undefined ") #TODO testing this, warns during runtime
-ELSE()
+else()
     message("Release build")
     set(CMAKE_POSITION_INDEPENDENT_CODE ON) #(this should be default on)
     set(C_FLAGS_DEBUG    " -O3 ")
     set(C_FLAGS_SECURITY " -D_FORTIFY_SOURCE=2  -D_GLIBCXX_ASSERTIONS -fcf-protection=full -fstack-protector-strong \
                            -Wl,-z,noexecstack -Wl,-z,now -Wl,-z,relro -Wl,-z,defs ") #more: -fstack-clash-protection
-ENDIF()
+endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=${C_STD} ${C_FLAGS_DEBUG} ${C_FLAGS_WARNINGS} ${C_FLAGS_WARNINGS_EXTRA} ${C_FLAGS_SECURITY} ${C_FLAGS_RUNTIME_CHECKS} -fno-common")
 
@@ -71,6 +71,19 @@ install(FILES include/config.h include/portknock.h
 if (UNIT_TEST)
     include(CTest)
     add_subdirectory(test/)
+
+# Run CodeCoverage on unit tests
+# make coverage
+# Prerequisites: sudo apt install -y lcov
+    set(CMAKE_COMPILER_IS_GNUCXX true) #ugly hack, it bugged for me (TODO, perhaps because C project, not CXX?)
+    include(test/CodeCoverage.cmake)
+    APPEND_COVERAGE_COMPILER_FLAGS()
+    setup_target_for_coverage_lcov(
+        NAME coverage
+        EXECUTABLE ${CMAKE_BINARY_DIR}/test/unit_tests
+        EXCLUDE "/usr/include/*" "gtest/*"
+        DEPENDENCIES portknock pknock
+    )
 endif()
 
 ###############################################
@@ -124,15 +137,3 @@ add_custom_target(
     COMMAND clang-format ../src/*.[ch] ../include/*.[ch] ../tool/*.[ch] ../test/*.cc -i
 )
 
-# Run CodeCoverage on unit tests
-# make coverage
-# Prerequisites: sudo apt install -y lcov
-set(CMAKE_COMPILER_IS_GNUCXX true) #ugly hack, it bugged for me (TODO, perhaps because C project, not CXX?)
-include(test/CodeCoverage.cmake)
-APPEND_COVERAGE_COMPILER_FLAGS()
-setup_target_for_coverage_lcov(
-    NAME coverage
-    EXECUTABLE ${CMAKE_BINARY_DIR}/test/unit_tests
-    EXCLUDE "/usr/include/*" "gtest/*"
-    DEPENDENCIES portknock pknock
-)
