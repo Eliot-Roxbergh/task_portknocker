@@ -145,7 +145,7 @@ cd build; rm CMakeCache.txt CMakeFiles Makefile -rf; cmake .. -DCMAKE_BUILD_TYPE
 
 ```
 sudo apt update
-sudo apt install -y gcc valgrind clang clang-tidy openssl libssl-1.1 libssl-dev python3-pip lcov
+sudo apt install -y gcc valgrind clang clang-tidy openssl libssl-1.1 libssl-dev python3-pip lcov pkg-config
 pip3 install --user codechecker
 ```
 
