@@ -89,6 +89,11 @@ endif()
 ###############################################
 ##              Static Analysis              ##
 ###############################################
+
+#NOTE! On a different project this did not work,
+#       probably recommended to enable `set(CMAKE_EXPORT_COMPILE_COMMANDS ON)`
+#       and skip seperate make step below. Makes sense to change this!
+#       But as this works right now _here_, I will leave it as is.
 add_custom_target(
     codechecker_build
     make clean
