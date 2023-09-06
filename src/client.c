@@ -27,7 +27,7 @@ int start_client(const char *secret)
     }
 
     fprintf(stdout, "INFO: Connecting to server with TLS (%s:%u/TCP) ...\n", SERVER_IP, TLS_PORT);
-    if ((rv = start_tls_session() != 0)) {
+    if ((rv = start_tls_session()) != 0) {
         fprintf(stderr, "ERROR: Client TLS failed\n");
         goto error;
     }
