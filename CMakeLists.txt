@@ -14,12 +14,14 @@ set(C_STD gnu11)
 #NOTE: Some of these compiler flags are most surely GCC specific,
 #       and some security flags are hw specific such as fcf-protection (uses Intel CET, according to GCC-12)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON) #CodeChecker
     message("Debug build")
     set(CMAKE_VERBOSE_MAKEFILE 1)
     set(C_FLAGS_DEBUG    " -g -Og -fasynchronous-unwind-tables -fexceptions -fno-omit-frame-pointer ")
     set(C_FLAGS_WARNINGS " -Wall -Wextra -pedantic -Werror -Wformat=2 -Wconversion -Wdouble-promotion -Wshadow -Wundef ")
 
     # Additional warnings, in some cases these can be ignored (that's the idea at least)
+    # TODO: CodeChecker might complain on -fanalyzer flag
     set(C_FLAGS_WARNINGS_EXTRA " -fanalyzer -Wcast-qual -Wcast-align -Wredundant-decls -Winline -Wdisabled-optimization -Wnested-externs \
                                  -fstrict-aliasing ") #more: -Wmissing-prototypes -Wmissing-declarations
     set(C_FLAGS_RUNTIME_CHECKS " -fsanitize=address,undefined ") #TODO testing this, warns during runtime
@@ -89,21 +91,10 @@ endif()
 ###############################################
 ##              Static Analysis              ##
 ###############################################
-
-#NOTE! On a different project this did not work,
-#       probably recommended to enable `set(CMAKE_EXPORT_COMPILE_COMMANDS ON)`
-#       and skip seperate make step below. Makes sense to change this!
-#       But as this works right now _here_, I will leave it as is.
-add_custom_target(
-    codechecker_build
-    make clean
-    COMMAND CodeChecker log --build "make" ;
-    --output "./compile_commands.json" ;
-)
 add_custom_target(
     codechecker_analyze
-    DEPENDS codechecker_build
     COMMAND CodeChecker analyze "compile_commands.json" -o reports;
+    # Note: 'extreme' is noisy, tweak accordingly (e.g. disable warnings below)
     --enable extreme;
     --clean;
     --ignore "../.SKIPFILE" ;
@@ -119,8 +110,11 @@ add_custom_target(
     -d cppcoreguidelines-init-variables;
 
     # Optional, can disable these warnings
-    #-d clang-analyzer-security.insecureAPI.*;
-    #-d misc-no-recursion;
+    -d misc-no-recursion;
+    # (Check only some unused return value functions)
+    -d cert-err33-c
+    -e bugprone-unused-return-value
+    #
 )
 add_custom_target(
     codechecker
