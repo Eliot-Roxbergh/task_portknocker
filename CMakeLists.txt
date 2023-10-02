@@ -20,9 +20,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(C_FLAGS_WARNINGS " -Wall -Wextra -pedantic -Werror -Wformat=2 -Wconversion -Wdouble-promotion -Wshadow -Wundef ")
 
     # Additional warnings, in some cases these can be ignored (that's the idea at least)
-    set(C_FLAGS_WARNINGS_EXTRA " -Wcast-qual -Wcast-align -Wredundant-decls -Winline -Wdisabled-optimization -Wnested-externs \
+    set(C_FLAGS_WARNINGS_EXTRA " -fanalyzer -Wcast-qual -Wcast-align -Wredundant-decls -Winline -Wdisabled-optimization -Wnested-externs \
                                  -fstrict-aliasing ") #more: -Wmissing-prototypes -Wmissing-declarations
-    set(C_FLAGS_RUNTIME_CHECKS " -fsanitize=undefined ") #TODO testing this, warns during runtime
+    set(C_FLAGS_RUNTIME_CHECKS " -fsanitize=address,undefined ") #TODO testing this, warns during runtime
 else()
     message("Release build")
     set(CMAKE_POSITION_INDEPENDENT_CODE ON) #(this should be default on)
@@ -117,6 +117,10 @@ add_custom_target(
     -d google-readability-todo;
     -d cppcoreguidelines-avoid-magic-numbers;
     -d cppcoreguidelines-init-variables;
+
+    # Optional, can disable these warnings
+    #-d clang-analyzer-security.insecureAPI.*;
+    #-d misc-no-recursion;
 )
 add_custom_target(
     codechecker
